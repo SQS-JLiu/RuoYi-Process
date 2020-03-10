@@ -135,7 +135,7 @@ v1.0
 
 QQ群：794711759(满)、813539310。
 
-![闲鹿工作流交流群](ruoyi-admin/src/main/resources/static/img/qr_code.png)
+![闲鹿工作流交流群](screenshot/qqgroup.png)
 ![闲鹿工作流交流群2](screenshot/qqgroup2.png)
 
 ## 视频教程
