@@ -12,7 +12,7 @@ File Encoding         : 65001
 
 Date: 2020-04-08 11:36:06
 */
-
+use ry_demo;
 SET FOREIGN_KEY_CHECKS=0;
 
 -- ----------------------------

@@ -177,7 +177,8 @@ public class BizLeaveController extends BaseController {
         mmap.put("bizLeave", bizLeave);
         mmap.put("taskId", taskId);
         String verifyName = task.getTaskDefinitionKey().substring(0, 1).toUpperCase() + task.getTaskDefinitionKey().substring(1);
-        return prefix + "/task" + verifyName;
+        //return prefix + "/task" + verifyName;
+        return prefix + "/task";
     }
 
     @GetMapping("/showFormDialog/{instanceId}")

@@ -1,5 +1,6 @@
 package com.ruoyi.activiti.service.impl;
 
+import com.ruoyi.activiti.component.ActJumpNode;
 import com.ruoyi.activiti.domain.BizTodoItem;
 import com.ruoyi.activiti.service.IBizTodoItemService;
 import com.ruoyi.common.core.page.PageDomain;
@@ -52,6 +53,8 @@ public class ProcessServiceImpl implements IProcessService {
     private SysUserMapper userMapper;
     @Autowired
     private IBizTodoItemService bizTodoItemService;
+    @Autowired
+    ActJumpNode actJumpNode;
 
     @Override
     public ProcessInstance submitApply(String applyUserId, String businessKey, String itemName, String itemConent, String module, Map<String, Object> variables) {
@@ -139,27 +142,36 @@ public class ProcessServiceImpl implements IProcessService {
             taskService.resolveTask(taskId, variables);
             // 只有签收任务，act_hi_taskinst 表的 assignee 字段才不为 null
             taskService.claim(taskId, ShiroUtils.getLoginName());
-            taskService.complete(taskId, variables);
-
+            if(!agree){
+                //跳转方式不能执行complete(taskId)完成任务,只能直接跳转 测试可行
+                //actJumpNode.jumpToEndNode(taskId);
+            }else {
+                taskService.complete(taskId, variables);
+            }
+            if(!agree){ //如果任意一人拒绝,则终止流程, 非跳转方式终止流程, 测试可行
+                Task currentTask = taskService.createTaskQuery().taskId(taskId).singleResult();
+                actJumpNode.finishProcess(currentTask.getProcessInstanceId());
+            }
             // 更新待办事项状态
             BizTodoItem query = new BizTodoItem();
             query.setTaskId(taskId);
             // 考虑到候选用户组，会有多个 todoitem 办理同个 task
             List<BizTodoItem> updateList = CollectionUtils.isEmpty(bizTodoItemService.selectBizTodoItemList(query)) ? null : bizTodoItemService.selectBizTodoItemList(query);
-            for (BizTodoItem update: updateList) {
-                // 找到当前登录用户的 todoitem，置为已办
-                if (update.getTodoUserId().equals(ShiroUtils.getLoginName())) {
-                    update.setIsView("1");
-                    update.setIsHandle("1");
-                    update.setHandleUserId(ShiroUtils.getLoginName());
-                    update.setHandleUserName(ShiroUtils.getSysUser().getUserName());
-                    update.setHandleTime(DateUtils.getNowDate());
-                    bizTodoItemService.updateBizTodoItem(update);
-                } else {
-                    bizTodoItemService.deleteBizTodoItemById(update.getId()); // 删除候选用户组其他 todoitem
+            if(updateList != null){
+                for (BizTodoItem update: updateList) {
+                    // 找到当前登录用户的 todoitem，置为已办
+                    if (update.getTodoUserId().equals(ShiroUtils.getLoginName())) {
+                        update.setIsView("1");
+                        update.setIsHandle("1");
+                        update.setHandleUserId(ShiroUtils.getLoginName());
+                        update.setHandleUserName(ShiroUtils.getSysUser().getUserName());
+                        update.setHandleTime(DateUtils.getNowDate());
+                        bizTodoItemService.updateBizTodoItem(update);
+                    } else {
+                        bizTodoItemService.deleteBizTodoItemById(update.getId()); // 删除候选用户组其他 todoitem
+                    }
                 }
             }
-
             // 下一节点处理人待办事项
             bizTodoItemService.insertTodoItem(instanceId, itemName, itemContent, module);
         } catch (Exception e) {
